@@ -5,8 +5,7 @@
   "main": "circle2d.js",
   "dependencies": {
     "abstract-class-error": "^1.0.1",
-    "centroid": "^1.0.0",
-    "doc-ready": "^1.0.4"
+    "centroid": "^1.0.0"
   },
   "devDependencies": {},
   "scripts": {
