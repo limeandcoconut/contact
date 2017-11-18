@@ -1,7 +1,10 @@
 /**
  * A module for working with 2 dimentional vectors.
  * @module
+ * @todo Find out result of projecting zero vectors.
  */
+
+// TODO:  Find out result of projecting zero vectors.
 
 const Vector3D = require('./vector3d.js')
 
@@ -137,6 +140,15 @@ class Vector2D {
     }
 
     /**
+     * Return a string representation of this Vector2D.
+     * @method toString
+     * @return {String}                 Return a string representation of this Vector2D.
+     */
+    toString() {
+        return `Vector2D: {x: ${this.x}, y: ${this.y}}`
+    }
+
+    /**
      * Add two vectors.
      * @method add
      * @static
@@ -222,15 +234,28 @@ class Vector2D {
      * @static
      * @param   {Vector2D}  a       The vector to project.
      * @param   {Vector2D}  b       The vector to project onto.
+     * @param   {Boolean}   clamp   Flag to indicate that the projection should be clamped onto the second vector.
      * @throws  {TypeError}         Throws if either argument is not an instance of Vector2D.
      * @return  {Number}            Returns a new vector which is the result of projecting one of these vectors onto
      *                              the other.
      */
-    static projectVector(a, b) {
+    static projectVector(a, b, clamp = false) {
         this.assertVectors(a, b)
-        var projection = new Vector2D(b.x / b.magnitude(), b.y / b.magnitude())
 
-        projection.scale((Vector2D.dotProduct(a, b) / b.magnitude()))
+        // Hacky fix, not sure if it's right at this point.
+        if (a.magnitude() === 0 || b.magnitude() === 0) {
+            return new Vector2D(0, 0)
+        }
+        let projection = new Vector2D(b).normalize()
+
+        let scalar = (Vector2D.dotProduct(a, b) / b.magnitude())
+
+        // This is useful for projecting onto a line segment
+        if (clamp) {
+            scalar = Math.max(0, Math.min(1, scalar))
+        }
+
+        projection.scale(scalar)
 
         return projection
     }
@@ -246,9 +271,9 @@ class Vector2D {
      */
     static cosineTheta(a, b) {
         this.assertVectors(a, b)
-        var numerator = Vector2D.dotProduct(a, b)
+        let numerator = Vector2D.dotProduct(a, b)
 
-        var denominator = a.magnitude() * b.magnitude()
+        let denominator = a.magnitude() * b.magnitude()
         return numerator / denominator
     }
 

@@ -3,10 +3,12 @@
  * @module
  * @todo Probably nix getOrthogonal as it's not very useful in 3d.
  * @todo Method for projecting vector onto a plane.
+ * @todo Bring up to feature parity with Vector2D.
  */
 
 // TODO: Probably nix getOrthogonal as it's not very useful in 3d.
 // TODO: Method for projecting vector onto a plane.
+// TODO: Bring up to feature parity with Vector2D.
 
 /**
  * Class for representing 3D vectors.

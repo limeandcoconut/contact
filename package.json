@@ -1,8 +1,8 @@
 {
   "name": "contact",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A package for doing precise swept collisions with convex polygons.",
-  "main": "circle2d.js",
+  "main": "index.js",
   "dependencies": {
     "abstract-class-error": "^1.0.1",
     "centroid": "^1.0.0"

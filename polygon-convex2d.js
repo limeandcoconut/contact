@@ -5,7 +5,7 @@
 
 const Vector2D = require('./vector2d.js')
 const Shape2D = require('./shape2d.js')
-const findCentroid = require('centroid')
+const findCentroid = require('centroid2d')
 
 /**
  * Class for representing 2D convex polygons.
@@ -23,14 +23,18 @@ class PolygonConvex2D extends Shape2D {
     constructor(vertices) {
         super()
 
+        if (vertices instanceof PolygonConvex2D) {
+            this.center = new Vector2D(vertices.center)
+            this.vertices = vertices.vertices.map((vertex) => new Vector2D(vertex))
+            return
+        }
+
         if (!Array.isArray(vertices)) {
             throw new TypeError('Vertices must be an array')
         }
 
-        let coordinates
-
         switch (typeof vertices[0]) {
-        case 'number':
+        case 'number': {
             // if (typeof vertices[0] === 'number') {
             if (vertices.length % 2 !== 0) {
                 throw new RangeError('An even number of coordinates required to construct vertices.')
@@ -39,13 +43,14 @@ class PolygonConvex2D extends Shape2D {
                 throw new RangeError(`At least 3 vertices required, ${vertices.length} provided.`)
             }
 
-            coordinates = vertices
+            let coordinates = vertices
             vertices = []
             for (let i = 0; i < coordinates.length; i += 2) {
                 vertices.push(new Vector2D(coordinates[i], coordinates[i + 1]))
             }
             break
-        case 'object':
+        }
+        case 'object': {
             if (vertices.length < 3) {
                 throw new RangeError(`At least 3 vertices required, ${vertices.length} provided.`)
             }
@@ -64,6 +69,7 @@ class PolygonConvex2D extends Shape2D {
                     (vertex) => new Vector2D(vertex.x, vertex.y)
             )
             break
+        }
         default:
             throw new TypeError('Unacceptable arguments.')
         }
@@ -100,6 +106,21 @@ class PolygonConvex2D extends Shape2D {
         })
 
         return furthestVertex
+    }
+
+    /**
+     * Translates every vertex in the shape by the given vector.
+     * @method translate
+     * @param {Vector2D}        vector          A Vector2D  to translate this polygon by.
+     * @throws  {TypeError}                     Throws if vector is not passed as an instance of Vector2D.
+     */
+    translate(vector) {
+        if (!(vector instanceof Vector2D)) {
+            throw new TypeError('Translation vector must be an instance of Vector2D')
+        }
+
+        this.vertices = this.vertices.map((vertex) => Vector2D.add(vertex, vector))
+        this.center = Vector2D.add(this.center, vector)
     }
 }
 
