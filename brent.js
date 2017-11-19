@@ -58,11 +58,16 @@ function uniroot({func, lowerLimit, upperLimit, errorTolerance, maxIterations}) 
         }
 
         actualTolerance = (1e-15 * Math.abs(b)) + (errorTolerance / 2)
+        // Bisection?
         newStep = (c - b) / 2
 
         if (Math.abs(newStep) <= actualTolerance || fb === 0) {
             // Acceptable approx. is found
             return b
+        }
+
+        if (fb > 0) {
+            break
         }
 
         // Decide if the interpolation can be tried
@@ -102,7 +107,7 @@ function uniroot({func, lowerLimit, upperLimit, errorTolerance, maxIterations}) 
                 newStep = p / q
             }
 
-            // If p/q is too large then the bissection procedure can reduce [b,c] range to more extent
+            // If p/q is too large then the bissection procedure can reduce [b,c] range to a greater extent
         }
 
         if (Math.abs(newStep) < actualTolerance) {
@@ -117,12 +122,15 @@ function uniroot({func, lowerLimit, upperLimit, errorTolerance, maxIterations}) 
         b += newStep
         fb = func(b)
 
-        if ((fb > 0 && fc > 0) || (fb < 0 && fc < 0)) {
+        if ((fb > 0 && fc > 0) ||
+			(fb < 0 && fc < 0)) {
             // Adjust c for it to have a sign opposite to that of b
             c = a
             fc = fa
         }
     }
+
+    // uniroot()
 
 }
 
