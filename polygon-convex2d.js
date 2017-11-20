@@ -111,8 +111,9 @@ class PolygonConvex2D extends Shape2D {
     /**
      * Translates every vertex in the shape by the given vector.
      * @method translate
-     * @param {Vector2D}        vector          A Vector2D  to translate this polygon by.
+     * @param   {Vector2D}      vector          A Vector2D  to translate this polygon by.
      * @throws  {TypeError}                     Throws if vector is not passed as an instance of Vector2D.
+     * @return  {PolygonConvex2D}               Returns this, for chaining.
      */
     translate(vector) {
         if (!(vector instanceof Vector2D)) {
@@ -121,6 +122,8 @@ class PolygonConvex2D extends Shape2D {
 
         this.vertices = this.vertices.map((vertex) => Vector2D.add(vertex, vector))
         this.center = Vector2D.add(this.center, vector)
+
+        return this
     }
 }
 

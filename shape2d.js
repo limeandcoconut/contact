@@ -18,6 +18,7 @@ class Shape2D {
      * @throws {AbstractConstructError}      Throws if Shape2D class is the target of the new operator, as
      *                                       this class is abstract.
      * @throws {AbstractConstructError}      Throws if support method is not overridden by the user.
+     * @throws {AbstractConstructError}      Throws if translate method is not overridden by the user.
      */
     constructor() {
         if (new.target === Shape2D) {
@@ -27,6 +28,10 @@ class Shape2D {
         if (this.support === Shape2D.prototype.support) {
             throw new AbstractConstructError('Method "support" must be overridden in class Shape2D')
         }
+
+        if (this.translate === Shape2D.prototype.translate) {
+            throw new AbstractConstructError('Method "translate" must be overridden in class Shape2D')
+        }
     }
 
     /**
@@ -35,6 +40,24 @@ class Shape2D {
      * @abstract
      */
     support() {}
+
+    /**
+     * Translate the shape by the given vector.
+     * @method translate
+     * @abstract
+     */
+    translate() {}
+
+    //  * @param   {Shape2D}   shape   A shape to return a copy of.
+    /**
+     * Return a copy of the given shape. This relies on the constructor of the object given.
+     * @method clone
+     * @throws  {TypeError}         Throws if argument is not an instance of shape2d.js
+     * @return  {Shape2D}           Returns a copy of the passed shape.
+     */
+    clone() {
+        return new this.constructor(this)
+    }
 }
 
 module.exports = Shape2D

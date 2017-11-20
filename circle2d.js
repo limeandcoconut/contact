@@ -54,6 +54,23 @@ class Circle2D extends Shape2D {
         }
         return direction.getNormal().scale(this.radius).add(this.center)
     }
+
+    /**
+     * Translates the shape by the given vector.
+     * @method translate
+     * @param   {Vector2D}      vector          A Vector2D  to translate this circle by.
+     * @throws  {TypeError}                     Throws if vector is not passed as an instance of Vector2D.
+     * @return  {Circle2D}                      Returns this, for chaining.
+     */
+    translate(vector) {
+        if (!(vector instanceof Vector2D)) {
+            throw new TypeError('Translation vector must be an instance of Vector2D')
+        }
+
+        this.center = Vector2D.add(this.center, vector)
+
+        return this
+    }
 }
 
 module.exports = Circle2D

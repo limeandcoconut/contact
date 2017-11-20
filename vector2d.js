@@ -241,18 +241,18 @@ class Vector2D {
      */
     static projectVector(a, b, clamp = false) {
         this.assertVectors(a, b)
-
+        let bMagnitude = b.magnitude()
         // Hacky fix, not sure if it's right at this point.
-        if (a.magnitude() === 0 || b.magnitude() === 0) {
+        if (a.magnitude() === 0 || bMagnitude === 0) {
             return new Vector2D(0, 0)
         }
         let projection = new Vector2D(b).normalize()
 
-        let scalar = (Vector2D.dotProduct(a, b) / b.magnitude())
+        let scalar = (Vector2D.dotProduct(a, b) / bMagnitude)
 
         // This is useful for projecting onto a line segment
         if (clamp) {
-            scalar = Math.max(0, Math.min(1, scalar))
+            scalar = Math.max(0, Math.min(bMagnitude, scalar))
         }
 
         projection.scale(scalar)

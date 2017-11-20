@@ -1,205 +1,278 @@
 const Vector2D = require('./vector2d')
-const Polygon = require('./polygon-convex2d')
+const Shape2D = require('./shape2d')
+const brentsMethod = require('brents-method')
 
-class Contact {
-    constructor() {
-        console.log('0.1.2')
-    }
+/*
+ * P   = shapeB
+ * Q   = shapeA
+ * s   = direction at this iteration
+ * t0  = beginning of interval
+ * t1  = end of interval
+ * TOI = Time of intercept
+ */
 
-    addSupportVertex(direction, shapeA, shapeB, vertices) {
-        let newVertex = Vector2D.subtract(shapeA.support(direction.getInverse()), shapeB.support(direction))
-        // console.log(`*Sa(-s): ${shapeA.support(direction.getInverse())}`)
-        // console.log(`*Sb(s): ${shapeB.support(direction)}`)
-        vertices.push(newVertex)
-        return newVertex
-    }
+/**
+  * Sort separating information objects in descending order by distance.
+  * @function distanceDescending
+  * @param  {Object} a  One of the objects to sort.
+  * @param  {Object} b  One of the objects to sort.
+  * @return {Number}    A positive, negative, or zero number used to sort distances.
+  */
+function distanceDescending(a, b) {
+    return b.distance - a.distance
+}
 
-    supportingDistance(direction, shapeA, shapeB) {
-        // a and b might be backwards here. Dunno for sure which one is p and which is q.
-        let a = Vector2D.dotProduct(direction, shapeA.support(direction.getInverse()))
-        let b = Vector2D.dotProduct(direction, shapeB.support(direction))
+/**
+ * A module for doing intersect and TOI tests on 2D shapes.
+ * @module contact
+ */
+module.exports = {
 
-        let sd = a - b
-        // console.log(sd)
-        // console.log(`: ${shapeA.support(direction.getInverse())}`)
-        // console.log(`Sa(-s): ${shapeA.support(direction.getInverse())}`)
-        // console.log(`Sb(s):  ${shapeB.support(direction)}`)
-        // console.log(`s:      ${direction}`)
-        // console.log(`a: ${a}`)
-        // console.log(`b: ${b}`)
-        // console.log(`----------`)
-        return sd
-    }
-
-    // p=a
-    // q=b
-
-    gjk(shapeA, shapeB) {
-        let lastMD = Number.MAX_SAFE_INTEGER
-        let currentMD = 0
-        let vertices = []
-        let v1
-        let v2
-        let v1v2
-
-        let supportingDistances = []
-
-        let direction = Vector2D.subtract(shapeA.center, shapeB.center)
-        // console.log(`direction: ${direction}`)
-        supportingDistances.push({
-            distance: this.supportingDistance(direction, shapeA, shapeB),
-            direction,
-        })
-        direction = this.addSupportVertex(direction, shapeA, shapeB, vertices)
-        // console.log(`direction: ${direction}`)
-        currentMD = direction.magnitude()
-
-        do {
-            supportingDistances.push({
-                distance: this.supportingDistance(direction, shapeA, shapeB),
-                direction,
-            })
-            this.addSupportVertex(direction, shapeA, shapeB, vertices)
-
-            vertices = this.pruneVertices(vertices)
-
-            v1 = vertices[0]
-            v2 = vertices[1]
-            // console.log(`v1:        ${v1}`)
-            // console.log(`v2:        ${v2}`)
-            if (v1.equals(v2)) {
-                break
-            }
-            v1v2 = Vector2D.subtract(v2, v1)
-            // console.log(`v1v2:       ${v1v2}`)
-
-            direction = Vector2D.projectVector(v1.getInverse(), v1v2)
-            // console.log(`projection: ${direction}`)
-            direction = Vector2D.add(direction, v1)
-            // console.log(`adjusted:   ${direction}`)
-
-            lastMD = currentMD
-            currentMD = direction.magnitude()
-            // console.log(currentMD, lastMD)
-        } while (currentMD < lastMD)
-        // console.log('done')
-
-        // Sort distances decending
-        supportingDistances.sort((a, b) => {
-            return b.distance - a.distance
-        })
-
-        return supportingDistances
-    }
-
+    /**
+     * Perform an intersect test on two shapes with given velocities across a time interval represented by the
+     * velocities. If necessary get the time of intercept for the two shapes.
+     * @function test
+     * @param   {Shape2D}           shapeA          One of the shapes to perform the intersect test on.
+     * @param   {Shape2D}           shapeB          Another shape to perform the intersect test on.
+     * @param   {Vector2D}          shapeAVelocity  The velocity of shapeA.
+     * @param   {Vector2D}          shapeBVelocity  The velocity of shapeB.
+     * @return  {Boolean|Number}                    If the shapes intersect initially return true.
+     *                                              If the shapes do not intersect at all return false.
+     *                                              If necessary return a Number on the interval [0, 1] representing
+     *                                              a fractional time of intercept.
+     */
     test(shapeA, shapeB, shapeAVelocity, shapeBVelocity) {
-        // Reset Everyting
-        // this.vertices = []
-        // this.direction = null
-        // this.shapeA = shapeA
-        // this.shapeB = shapeB
-
-        // Supporting distances at time = 0.
+        if (!(shapeA instanceof Shape2D)) {
+            throw new TypeError(`Shape A must be an instance of Shape2D. ${shapeA.constructor.name} provided.`)
+        }
+        if (!(shapeB instanceof Shape2D)) {
+            throw new TypeError(`Shape B must be an instance of Shape2D. ${shapeB.constructor.name} provided.`)
+        }
+        if (!(shapeAVelocity instanceof Vector2D)) {
+            throw new TypeError(`Shape A velocity must be an instance of Vector2D. ${shapeAVelocity.constructor.name} provided.`)
+        }
+        if (!(shapeBVelocity instanceof Vector2D)) {
+            throw new TypeError(`Shape B velocity must be an instance of Vector2D. ${shapeBVelocity.constructor.name} provided.`)
+        }
+        /*
+         * Get supporting directions and distances at t0 to see if there is an initial separating distance
+         * (positive supporting distance).
+         * Supporting distances at t0 are sorted descending.
+         * These are objects with distance and direction.
+         * Distances are signed as they correspond to a direction.
+         * Negative distances represent no separation on that plane.
+         */
         let supportingDistancest0 = this.gjk(shapeA, shapeB)
         let separatingDistancest0 = []
-        let sd
+
+        // Filter out negative distances and determine if the shapes are in contact initially.
         let separated = false
+        let sd
         let iLen = supportingDistancest0.length
         for (let i = 0; i < iLen; i++) {
             sd = supportingDistancest0[i]
-
+            // If the supporting distance is positive it separates the shapes.
             if (sd.distance > 0) {
                 separatingDistancest0.push(sd)
-                // Handle for initial collision.
-                // throw new Error(`Collision at t0. ${sd.distance}`)
                 separated = true
-                // return false
             } else {
+                // Break at the first negative distance (they are sorted).
                 break
             }
-
-            // Perhaps sort here later.
         }
 
-        // If the shapes are not separated return a collision.
+        // If the shapes are not separated return a collision at t0.
         if (!separated) {
             return true
         }
 
-        let primarySupportingDistances = supportingDistancest0
+        // Do an extrusion of the separating space from t0  to t1. This is the separating hyperspace.
 
+        // The directions are used to get supporting distances (along the same vectors) from other times tx.
+        let initialSupportingDirections = supportingDistancest0
+        // Simplify matters by using only one vector to move shapes.
         let relativeVelocity = Vector2D.subtract(shapeBVelocity, shapeAVelocity)
 
-        // Shape B at time = 1.
-        let shapeBt1 = new Polygon(shapeB)
+        // Shape B at t1.
+        let shapeBt1 = shapeB.clone()
         shapeBt1.translate(relativeVelocity)
 
-        let supportingDistancest1 = this.getSupportingDistances(primarySupportingDistances, shapeA, shapeBt1)
+        // Get supporting distances at t1 (again sorted descending).
+        let supportingDistancest1 = this.supportingHyperspaceExtrusion(initialSupportingDirections, shapeA, shapeBt1)
 
+        // If at least one distance is positive then there is a plane separating P and Q on the interval t0 to t1.
         if (supportingDistancest1[0].distance > 0) {
-            // if (relativeVelocity.magnitude() > 0) {
-
-            //     console.log(relativeVelocity.magnitude())
-            //     supportingDistancest1.forEach((sd) => {
-            //         console.log(sd.distance, sd.direction)
-            //     })
-            // console.log('')
-            // }/
             return false
         }
-        // return supportingDistancest1[0].distance <= 0
 
+        /*
+         * There is separating distance at t0 and none at t1 therefore we need to find a TOI.
+         * This is done using Brent's Method of Root Solving. Brent's Method requires, at least, a function of x
+         * (in our case SD(t)) and lower and upper bounds within which to search for an x intercept. In our case
+         * the x intecept represents SD(tx) = 0 where tx is some time inbetween t0 and t1.
+         */
+
+        // Limits of t for the function
         let lowerLimit = 0
         let upperLimit = 1
-        // let lowerLimit = supportingDistancest1[0].distance
-        // let upperLimit = primarySupportingDistances[primarySupportingDistances.length - 1].distance
 
-        // let tolerance = 0
-
+        // This is our function for finding time of intercept.
+        // It takes t and returns the maximum supporting distance at that time based on the supporting directions
+        // that were found earlier.
         let func = (t) => {
             // Scale v by t.
             let vt = new Vector2D(relativeVelocity)
             vt.scale(t)
             // Translate shapeB by vt.
-            let shapeBt = new Polygon(shapeB)
+            let shapeBt = shapeB.clone()
             shapeBt.translate(vt)
             // Get supporting distances for shapeA and shapeBt using direction vectors from inital supporting distances.
-            let supportingDistancest = this.getSupportingDistances(primarySupportingDistances, shapeA, shapeBt)
-            // If the support distance is positive a simple extrusion test wont be precise enough,
+            let supportingDistancest = this.supportingHyperspaceExtrusion(initialSupportingDirections, shapeA, shapeBt)
+
+            // If the support distance is positive then a simple extrusion test wont be precise enough,
             // we need to run a full GJK extrusion to get the closest distance.
-            // Probably need to use the new supporting distances for future extrusions...
             if (supportingDistancest[0].distance > 0) {
                 supportingDistancest = this.gjk(shapeA, shapeBt)
+                // Go ahead and use the new supporting directions to calculate future distances.
+                // It's good to use the refined directions from this t because we know that P and Q are disjoint from
+                // t0 to now.
                 supportingDistancest = supportingDistancest.filter((sd) => sd.distance > 0)
-                primarySupportingDistances = supportingDistancest
+                initialSupportingDirections = supportingDistancest
             }
 
             // Return maximum distance
             return supportingDistancest[0].distance
         }
 
-        // let intersectTime = 1
-
-        // do {
-        let intersectTime = this.findRoot({
+        // We've found a intersect time so return it.
+        // This can be used as a scalar for the velocities of shapeA and shapeB to provide movement to the exact place
+        // that they intercept.
+        return brentsMethod({
             func,
             lowerLimit,
             upperLimit,
         })
+    },
 
-        // if (Math.abs(intersectTime) > tolerance && intersectTime > 0) {
-        //     let shapeBt = new Polygon(shapeB)
-        //     let vt = new Vector2D(relativeVelocity)
-        //     vt.scale(intersectTime)
-        //     shapeBt.translate(vt)
-        //     supportingDistancest0 = this.gjk(shapeA, shapeBt)
-        // }
-        // console.log(func(intersectTime))
-        return intersectTime
-        // } while (Math.abs(intersectTime) > tolerance)
-    }
+    /**
+     * Find a supporting vertex on the Minkowski Difference formed by the two shapes.
+     * @function addSupportVertex
+     * @param   {Vector2D}  direction   The vector along which to find supporting vertices.
+     * @param   {Shape2D}   shapeA      One of the shapes.
+     * @param   {Shape2D}   shapeB      The other shape.
+     * @param   {Array}     vertices    The array of Vector2D vertices representing the feature of the Minkowski
+     *                                  Difference closeset to the origin. This is here to be mutated.
+     * @return  {Vector2D}              The new vertex ont the Minkowski Difference.
+     */
+    addSupportVertex(direction, shapeA, shapeB, vertices) {
+        // Vq = Sq(-s)
+        // Vq = Sp(s)
+        // Vz = Vq - Vp
+        let newVertex = Vector2D.subtract(shapeA.support(direction.getInverse()), shapeB.support(direction))
+        vertices.push(newVertex)
+        return newVertex
+    },
 
-    getSupportingDistances(supportingDistances, shapeA, shapeB) {
+    /**
+     * Get the supporting distance between the given shapes along the given vector.
+     * @function supportingDistance
+     * @param   {Vector2D}  direction   The supporting direction along which to the supporting distance.
+     * @param   {Shape2D}   shapeA      One of the shapes.
+     * @param   {Shape2D}   shapeB      The other.
+     * @return  {Number}                The signed distance between those shapes along the given vector.
+     */
+    supportingDistance(direction, shapeA, shapeB) {
+        // SD(P, Q, s) = s • Sq(-s) - s • Sp(s)
+        let a = Vector2D.dotProduct(direction, shapeA.support(direction.getInverse()))
+        let b = Vector2D.dotProduct(direction, shapeB.support(direction))
+
+        let sd = a - b
+        return sd
+    },
+
+    /**
+     * Find the closeset feature on the Minkowski Difference of the given shapes to the origin, then return an Array of
+     * supporting directions and distances needed for extrusion testing.
+     * @function gjk
+     * @param   {Shape2D}   shapeA      One of the necessary shapes.
+     * @param   {Shape2D}   shapeB      One of the necessary shapes.
+     * @return  {Array}                 An Array of objects containing supporting directions and distances.
+     */
+    gjk(shapeA, shapeB) {
+        // Used to check if the Minkowski Distance is still decreasing at each iteration.
+        let lastMD = Number.MAX_SAFE_INTEGER
+        let currentMD = 0
+        // Vertices representing the feature of the Minkowski Difference closeset to the origin (a line or point).
+        let vertices = []
+        let v1
+        let v2
+        let v1v2
+
+        let supportingDistances = []
+        // The initial direction is the difference between the two shapes centers.
+        let direction = Vector2D.subtract(shapeA.center, shapeB.center)
+        // Get the first supporting distance.
+        supportingDistances.push({
+            distance: this.supportingDistance(direction, shapeA, shapeB),
+            direction,
+        })
+        // The closest feature must initially be the only vertex so far computed on the MD.
+        // The vector to this point is the new direction.
+        direction = this.addSupportVertex(direction, shapeA, shapeB, vertices)
+        currentMD = direction.magnitude()
+
+        do {
+            // Add the new distance.
+            supportingDistances.push({
+                distance: this.supportingDistance(direction, shapeA, shapeB),
+                direction,
+            })
+            // Add the next supporting virtex.
+            this.addSupportVertex(direction, shapeA, shapeB, vertices)
+
+            // If there are more than two vertices return the two closeset to the origin as our closest feature.
+            vertices = this.pruneVertices(vertices)
+
+            // Find the distance from the closest feature to the origin. This uses vector projection clamped to a
+            // line segment.
+            // See Figure 1 for a diagram of below.
+            v1 = vertices[0]
+            v2 = vertices[1]
+
+            // If we recieved the same vertex twice then the Minkowski Distance will not decrease anymore. Break early.
+            if (v1.equals(v2)) {
+                break
+            }
+            // Line segment from v1 to v2
+            v1v2 = Vector2D.subtract(v2, v1)
+
+            // Project the vector from v1 to the origin along the segment v1v2. Clamp the projection to the line
+            // segment so that if it doesn't fall in the middle either v1 or v2 will be used to calculate the
+            // Minkowski Distance. This is the new direction. Again see Figure 1 for a diagram.
+            direction = Vector2D.projectVector(v1.getInverse(), v1v2, true)
+            direction = Vector2D.add(direction, v1)
+
+            lastMD = currentMD
+            currentMD = direction.magnitude()
+        } while (currentMD < lastMD)
+        // Stop when the distance is no longer decreasing.
+
+        supportingDistances.sort(distanceDescending)
+
+        return supportingDistances
+    },
+
+    /**
+     * Get supporting distances for given supporting directions and shapes. This is an extrusion of supporting distances
+     * from a previous time to the current time as represented by the provided shapes.
+     * @function supportingHyperspaceExtrusion
+     * @param   {Array}     supportingDistances     An array of objects with supporting distances and directions.
+     * @param   {Shape2D}   shapeA                  One of the two shapes.
+     * @param   {Shape2D}   shapeB                  One of the two shapes.
+     * @return  {Array}                             An array of obects with supporting distances (and the provided
+     *                                              directions) for this configuration of shapes (for this time t).
+     */
+    supportingHyperspaceExtrusion(supportingDistances, shapeA, shapeB) {
         let newSupportingDistances = []
 
         let direction
@@ -207,172 +280,58 @@ class Contact {
         let iLen = supportingDistances.length
         for (let i = 0; i < iLen; i++) {
             direction = supportingDistances[i].direction
+            // Get the distance for the proveded direction.
             distance = this.supportingDistance(direction, shapeA, shapeB)
-            // if (distance > 0) {
+
             newSupportingDistances.push({
                 distance,
                 direction,
             })
-            // }
         }
 
-        // Sort distances decending
-        newSupportingDistances.sort((a, b) => {
-            return b.distance - a.distance
-        })
+        // Sort distances descending
+        newSupportingDistances.sort(distanceDescending)
 
         return newSupportingDistances
-    }
+    },
 
+    /**
+     * Prune vertices to the two closest to the origin. This mutates the passed Array.
+     * @function pruneVertices
+     * @param   {Array}     vertices                An array of Vector2D vertices on the Minkowski Difference.
+     * @return  {Array}                             An array of the two vertices closest to the origin.
+     */
     pruneVertices(vertices) {
         if (vertices.length < 3) {
             return vertices
         }
 
-        vertices.sort((a, b) => {
-            return a.magnitude() - b.magnitude()
-        })
-
-        return vertices.slice(0, 2)
-    }
-
-    // getIntersectTime({supportingDistancest0, lowerSD, upperSD, shapeA, shapeB, relativeVelocity}) {
-    // }
-
-    findRoot({func, lowerLimit, upperLimit, errorTolerance, maxIterations}) {
-        let a = lowerLimit
-        let b = upperLimit
-        let c = a
-        let fa = func(a)
-        let fb = func(b)
-        let fc = fa
-        // let s = 0
-        // let fs = 0
-        // Actual tolerance
-        let actualTolerance
-        // Step at this iteration
-        let newStep
-        // Distance from the last but one to the last approximation
-        let previousStep
-        // Interpolation step is calculated in the form p/q; division is delayed until the last moment
-        let p
-        let q
-
-        errorTolerance = errorTolerance || 0
-        maxIterations = maxIterations || 1000
-
-        while (maxIterations-- > 0) {
-
-            previousStep = b - a
-
-            if (Math.abs(fc) < Math.abs(fb)) {
-                // Swap data for b to be the best approximation
-                a = b
-                b = c
-                c = a
-                fa = fb
-                fb = fc
-                fc = fa
-            }
-
-            actualTolerance = (1e-15 * Math.abs(b)) + (errorTolerance / 2)
-            // Bisection?
-            newStep = (c - b) / 2
-
-            if (Math.abs(newStep) <= actualTolerance || fb === 0) {
-                // Acceptable approx. is found
-                return b
-            }
-
-            // Decide if the interpolation can be tried
-            if (Math.abs(previousStep) >= actualTolerance && Math.abs(fa) > Math.abs(fb)) {
-                // If previousStep was large enough and was in true direction, Interpolatiom may be tried
-                let t1
-                let cb
-                let t2
-
-                cb = c - b
-
-                if (a === c) {
-                    // If we have only two distinct points linear interpolation can only be applied
-                    t1 = fb / fa
-                    p = cb * t1
-                    q = 1.0 - t1
-                } else {
-                    // Quadric inverse interpolation
-                    q = fa / fc
-                    t1 = fb / fc
-                    t2 = fb / fa
-                    p = t2 * ((cb * q * (q - t1)) - ((b - a) * (t1 - 1)))
-                    q = (q - 1) * (t1 - 1) * (t2 - 1)
-                }
-
-                if (p > 0) {
-                    // p was calculated with the opposite sign; make p positive
-                    q = -q
-                } else {
-                    // and assign possible minus to q
-                    p = -p
-                }
-
-                if (p < ((0.75 * cb * q) - (Math.abs(actualTolerance * q) / 2)) &&
-                    p < Math.abs(previousStep * q / 2)) {
-                    // If (b + p / q) falls in [b,c] and isn't too large it is accepted
-                    newStep = p / q
-                }
-
-                // If p/q is too large then the bissection procedure can reduce [b,c] range to a greater extent
-            }
-
-            if (Math.abs(newStep) < actualTolerance) {
-                // Adjust the step to be not less than tolerance
-                newStep = (newStep > 0) ? actualTolerance : -actualTolerance
-            }
-
-            // Save the previous approximation
-            a = b
-            fa = fb
-            // Do step to a new approximate
-            b += newStep
-            fb = func(b)
-
-            if ((fb > 0 && fc > 0) ||
-                (fb < 0 && fc < 0)) {
-                // Adjust c for it to have a sign opposite to that of b
-                c = a
-                fc = fa
-            }
-        }
-
-        // uniroot()
-
-    }
+        vertices.sort((a, b) => a.magnitude() - b.magnitude())
+        // vertices is reassigned here just in case the user wants to use the mutated version rather than the returned
+        // one.
+        vertices = vertices.slice(0, 2)
+        return vertices
+    },
 }
 
-// Contact.EvolveResult = Object.freeze({
-//     INTERSECTION: 'INTERSECTION',
-//     STILL_EVOLVING: 'STILL_EVOLVING',
-//     NO_INTERSECTION: 'NO_INTERSECTION',
-// })
-
-module.exports = Contact
-
-/*
-             *                           v2
-             *                           |
-             *                           | v1v2
-             *           direction       |
-             *      o ------------------>|  ^ }  projection of v1o onto v1v2
-             *         `---.__          ∟|  | }  (closest point on v1v2
-             *                 `---.__   |  | }  to origin)
-             *                         `>v1
-             *
-             *                   v2
-             *                  /
-             *          dir    /
-             *      o ------->v1   }-- when clamped projection will return v1
-             *  +-{   ` .    /         (again closest point on v1v2)
-             *  |-{       `∟'
-             *  |
-             *  |__ actual projection of v1o onto v1v2
-             */
+/* Figure 1:
+ * When the projection falls within bounds:
+ *                           v2
+ *                           |
+ *                           | v1v2
+ *           direction       |
+ *      o ------------------>|  ^ }  projection of v1o onto v1v2
+ *         `---.__          ∟|  | }  (closest point on v1v2
+ *                 `---.__   |  | }  to origin)
+ *                         `>v1
+ *
+ * When it does not:
+ *                   v2
+ *                  /
+ *          dir    /
+ *      o ------->v1   }-- when clamped projection will return v1
+ *  +-{   ` .    /         (again, closest point on v1v2)
+ *  |-{       `∟'
+ *  |
+ *  |__ actual projection of v1o onto v1v2
+ */
