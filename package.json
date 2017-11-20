@@ -1,7 +1,7 @@
 {
   "name": "contact",
   "version": "0.1.1",
-  "description": "A package for doing precise swept collisions with convex polygons.",
+  "description": "A package for doing precise collisions and time of intercept computations with 2D shapes.",
   "main": "index.js",
   "dependencies": {
     "abstract-class-error": "^1.0.1",
@@ -16,7 +16,11 @@
     "url": "git+ssh://git@github.com/limeandcoconut/contact.git"
   },
   "keywords": [
-    "collision"
+    "collision",
+    "gjk",
+    "vlack",
+    "hit test",
+    "swept"
   ],
   "author": "Jacob Smith",
   "license": "ISC",

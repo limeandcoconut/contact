@@ -1,13 +1,15 @@
-const PolygonConvex2D = require('./polygon-convex2d.js')
-const Vector2D = require('./vector2d')
 const contact = require('./contact')
-const Circle2D = require('./circle2d')
-const Shape2D = require('./shape2d')
+const Vector2D = require('./vectors/vector2d')
+const Vector3D = require('./vectors/vector2d')
+const Shape2D = require('./shapes/shape2d')
+const PolygonConvex2D = require('./shapes/polygon-convex2d.js')
+const Circle2D = require('./shapes/circle2d')
 
 module.exports = {
-    PolygonConvex2D,
-    Vector2D,
     contact,
-    Circle2D,
+    Vector2D,
+    Vector3D,
     Shape2D,
+    PolygonConvex2D,
+    Circle2D,
 }

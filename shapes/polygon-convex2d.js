@@ -3,7 +3,7 @@
  * @module PolygonConvex2D
  */
 
-const Vector2D = require('./vector2d.js')
+const Vector2D = require('../vectors/vector2d.js')
 const Shape2D = require('./shape2d.js')
 const findCentroid = require('centroid2d')
 

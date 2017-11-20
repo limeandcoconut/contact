@@ -1,5 +1,5 @@
-const Vector2D = require('./vector2d')
-const Shape2D = require('./shape2d')
+const Vector2D = require('./vectors/vector2d')
+const Shape2D = require('./shapes/shape2d')
 const brentsMethod = require('brents-method')
 
 /*

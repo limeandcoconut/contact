@@ -3,7 +3,7 @@
  * @module Circle2d
  */
 
-const Vector2D = require('./vector2d.js')
+const Vector2D = require('../vectors/vector2d.js')
 const Shape2D = require('./shape2d.js')
 
 /**
