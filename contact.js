@@ -1,4 +1,4 @@
-const Vector2D = require('./vectors/vector2d')
+const {Vector2D} = require('friendly-vectors')
 const Shape2D = require('./shapes/shape2d')
 const brentsMethod = require('brents-method')
 

@@ -3,7 +3,7 @@
  * @module Circle2d
  */
 
-const Vector2D = require('../vectors/vector2d.js')
+const {Vector2D} = require('friendly-vectors')
 const Shape2D = require('./shape2d.js')
 
 /**
@@ -46,12 +46,18 @@ class Circle2D extends Shape2D {
      * @method support
      * @param   {Vector2D}      direction       A Vector2D representing the desired support direction.
      * @throws  {TypeError}                     Throws if direction is not passed as an instance of Vector2D.
+     * @throws  {RangeError}                    Throws if direction is the zero vector.
      * @return  {Vector2D}                      A Vector2D representing the point furthest 'support-ward' on the circle.
      */
     support(direction) {
         if (!(direction instanceof Vector2D)) {
             throw new TypeError('Direction must be an instance of Vector2D')
         }
+
+        if (direction.magnitude() === 0) {
+            throw new RangeError('Direction must be non-zero.')
+        }
+
         return direction.getNormal().scale(this.radius).add(this.center)
     }
 

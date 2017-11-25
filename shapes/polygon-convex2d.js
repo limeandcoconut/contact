@@ -3,7 +3,7 @@
  * @module PolygonConvex2D
  */
 
-const Vector2D = require('../vectors/vector2d.js')
+const {Vector2D} = require('friendly-vectors')
 const Shape2D = require('./shape2d.js')
 const findCentroid = require('centroid2d')
 
@@ -86,11 +86,16 @@ class PolygonConvex2D extends Shape2D {
      * @method support
      * @param   {Vector2D}      direction       A Vector2D representing the desired support direction.
      * @throws  {TypeError}                     Throws if direction is not passed as an instance of Vector2D.
+     * @throws  {RangeError}                    Throws if direction is the zero vector.
      * @return  {Vector2D}                      A Vector2D representing the point furthest 'support-ward' on the polgon.
      */
     support(direction) {
         if (!(direction instanceof Vector2D)) {
             throw new TypeError('Direction must be an instance of Vector2D')
+        }
+
+        if (direction.magnitude() === 0) {
+            throw new RangeError('Direction must be non-zero.')
         }
 
         let furthestDistance = Number.NEGATIVE_INFINITY
@@ -125,6 +130,25 @@ class PolygonConvex2D extends Shape2D {
 
         return this
     }
+
+    // recenter(reorder = false) {
+    //     if (reorder) {
+    //         let vertices = this.vertices
+    //         let min = vertices[0].x + vertices[0].y
+    //         let iLen = vertices
+    //         let vertex
+    //         let sum
+
+    //         for (let i = 1; i < iLen; i++) {
+    //             vertex = vertices[i]
+    //             sum = vertex.x + vertex.y
+    //             if (sum < min) {
+
+    //             }
+    //         }
+    //     }
+
+    // }
 }
 
 module.exports = PolygonConvex2D
