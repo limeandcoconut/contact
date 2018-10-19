@@ -17,15 +17,19 @@ class Rect2D extends Shape2D {
      * @constructor
      * @param {Vector2D}    center      The center of this rectangle.
      * @param {Number}      extents      The extents of this rectangle.
-     *
-     * @throws {TypeError}              Throws if center is not passed as an instance of Vector2D.
-     * @throws {TypeError}              Throws if extents is not passed as an instance of Vector2D.
+     * @throws {TypeError}              Throws if either center or extents is not passed as either an instance of
+     *                                  Vector2D or an object which can be used to construct a Vector2D.
      */
     constructor(center, extents) {
         super()
 
         if (!(center instanceof Vector2D) || !(extents instanceof Vector2D)) {
-            throw new TypeError('Center and extents must be either an instances of Vector2D or objects with x and y.')
+            if (typeof center !== 'object' || typeof extents !== 'object') {
+                throw new TypeError('Center and extents must be either instances of Vector2D or objects compatible with that constructor.')
+            }
+
+            center = new Vector2D(center)
+            extents = new Vector2D(extents)
         }
 
         this.center = center
@@ -95,7 +99,7 @@ class Rect2D extends Shape2D {
      * @method translate
      * @param   {Vector2D}      vector          A Vector2D  to translate this rectangle by.
      * @throws  {TypeError}                     Throws if vector is not passed as an instance of Vector2D.
-     * @return  {Circle2D}                      Returns this, for chaining.
+     * @return  {Rect2D}                      Returns this, for chaining.
      */
     translate(vector) {
         if (!(vector instanceof Vector2D)) {
