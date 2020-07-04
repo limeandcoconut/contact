@@ -5,9 +5,9 @@ const Circle2D = require('./shapes/circle2d')
 const Rect2D = require('./shapes/rect2d')
 
 module.exports = {
-    contact,
-    Shape2D,
-    PolygonConvex2D,
-    Circle2D,
-    Rect2D,
+  contact,
+  Shape2D,
+  PolygonConvex2D,
+  Circle2D,
+  Rect2D,
 }

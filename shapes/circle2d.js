@@ -3,7 +3,7 @@
  * @module Circle2d
  */
 
-const {Vector2D} = require('friendly-vectors')
+const { Vector2D } = require('friendly-vectors')
 const Shape2D = require('./shape2d.js')
 
 /**
@@ -13,34 +13,35 @@ const Shape2D = require('./shape2d.js')
 
 class Circle2D extends Shape2D {
 
-    /**
+  /**
      * @constructor
      * @param {Vector2D}    center      The center of this circle.
-     * @param {Number}      radius      The radius of this circle.
+     * @param {number}      radius      The radius of this circle.
      *
-     * @throws {TypeError}              Throws if center is not passed as an instance of Vector2D.
+     * @throws {TypeError}              Throws if center is not passed as an instance of Vector2D or an object with x
+     *                                  and y properties.
      * @throws {TypeError}              Throws if radius is not passed as a Number.
      */
-    constructor(center, radius) {
-        super()
+  constructor(center, radius) {
+    super()
 
-        if (!(center instanceof Vector2D)) {
-            // if (typeof center !== 'object' || typeof center.x !== 'number' || typeof center.y !== 'number') {
-            throw new TypeError('Center must be either an instance of Vector2D or an object with x and y.')
-            // }
+    if (!(center instanceof Vector2D)) {
+      if (typeof center !== 'object' || typeof center.x !== 'number' || typeof center.y !== 'number') {
+        throw new TypeError('Center must be either an instance of Vector2D or an object with x and y.')
+      }
 
-            // center = new Vector2D(center.x, center.y)
-        }
-
-        if (typeof radius !== 'number') {
-            throw new TypeError('Radius must be a number.')
-        }
-
-        this.center = center
-        this.radius = radius
+      center = new Vector2D(center.x, center.y)
     }
 
-    /**
+    if (typeof radius !== 'number') {
+      throw new TypeError('Radius must be a number.')
+    }
+
+    this.center = center
+    this.radius = radius
+  }
+
+  /**
      * Returns the point on this shape furthest in the direction passed.
      * @override
      * @method support
@@ -49,34 +50,34 @@ class Circle2D extends Shape2D {
      * @throws  {RangeError}                    Throws if direction is the zero vector.
      * @return  {Vector2D}                      A Vector2D representing the point furthest 'support-ward' on the circle.
      */
-    support(direction) {
-        if (!(direction instanceof Vector2D)) {
-            throw new TypeError('Direction must be an instance of Vector2D')
-        }
-
-        if (direction.magnitude() === 0) {
-            throw new RangeError('Direction must be non-zero.')
-        }
-
-        return direction.getNormal().scale(this.radius).add(this.center)
+  support(direction) {
+    if (!(direction instanceof Vector2D)) {
+      throw new TypeError('Direction must be an instance of Vector2D')
     }
 
-    /**
+    if (direction.magnitude() === 0) {
+      throw new RangeError('Direction must be non-zero.')
+    }
+
+    return direction.getNormal().scale(this.radius).add(this.center)
+  }
+
+  /**
      * Translates the shape by the given vector.
      * @method translate
      * @param   {Vector2D}      vector          A Vector2D  to translate this circle by.
      * @throws  {TypeError}                     Throws if vector is not passed as an instance of Vector2D.
      * @return  {Circle2D}                      Returns this, for chaining.
      */
-    translate(vector) {
-        if (!(vector instanceof Vector2D)) {
-            throw new TypeError('Translation vector must be an instance of Vector2D')
-        }
-
-        this.center = Vector2D.add(this.center, vector)
-
-        return this
+  translate(vector) {
+    if (!(vector instanceof Vector2D)) {
+      throw new TypeError('Translation vector must be an instance of Vector2D')
     }
+
+    this.center = Vector2D.add(this.center, vector)
+
+    return this
+  }
 }
 
 module.exports = Circle2D

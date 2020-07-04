@@ -3,17 +3,10 @@
   "version": "0.1.1",
   "description": "A package for doing precise collisions and time of intercept computations with 2D shapes.",
   "main": "index.js",
-  "dependencies": {
-    "abstract-class-error": "^1.0.1",
-    "centroid": "^1.0.0"
-  },
-  "devDependencies": {},
+  "author": "Jacob Smith <js@jacobsmith.tech>",
+  "license": "ISC",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/limeandcoconut/contact.git"
   },
   "keywords": [
     "collision",
@@ -22,10 +15,23 @@
     "hit test",
     "swept"
   ],
-  "author": "Jacob Smith",
-  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/limeandcoconut/contact.git"
+  },
   "bugs": {
     "url": "https://github.com/limeandcoconut/contact/issues"
   },
-  "homepage": "https://github.com/limeandcoconut/contact#readme"
+  "homepage": "https://github.com/limeandcoconut/contact#readme",
+  "dependencies": {
+    "abstract-class-error": "^1.0.1",
+    "centroid": "^1.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.4.0",
+    "eslint-config-limeandcoconut": "^1.3.0",
+    "eslint-plugin-html": "^6.0.2",
+    "eslint-plugin-unicorn": "^20.1.0",
+    "eslint-plugin-vue": "^6.2.2"
+  }
 }
