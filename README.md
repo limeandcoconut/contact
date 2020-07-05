@@ -7,21 +7,11 @@ A module for testing 2D shapes for collisions over a time interval. Uses the GJK
 const contact = require('contact')
 
 contact.test(shapeA, shapeB, velocityA, velocityB)
-// Returns true for a colision initially, false for no collision, for a number (scalar) for TOI.
+// Returns true for a colision initially, false for no collision, or a number (scalar) for TOI.
 ```
 
 ## Testing
 Coming soon.
-
-## Feedback ✉️
-
-[messagethesmith@gmail.com](messagethesmith@gmail.com)
-
-[https://github.com/limeandcoconut](https://github.com/limeandcoconut)
-
-[@limeandcoconut](https://twitter.com/limeandcoconut)
-
-Cheers!
 
 ## TODO:
 
@@ -30,10 +20,22 @@ Cheers!
 - [ ] More thorough description
 - [ ] Usage stats
 - [ ] Docs site
+- [ ] Consider making constructors chainable
 
-## Usage Stats
-Coming soon.
+## Feedback ✉️
+
+[Website 🌐](https://jacobsmith.tech)
+
+[js@jacobsmith.tech](mailto:js@jacobsmith.tech)
+
+[https://github.com/limeandcoconut](https://github.com/limeandcoconut)
+
+[@limeandcoconut 🐦](https://twitter.com/limeandcoconut)
+
+Cheers!
 
 ## License
 
-MIT, see [LICENSE.md](http://github.com/limeandcoconut/contact/blob/master/LICENSE.md) for details.
+ISC, see [license](./license) for details.
+
+
