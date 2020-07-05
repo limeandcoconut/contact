@@ -24,8 +24,8 @@
   },
   "homepage": "https://github.com/limeandcoconut/contact#readme",
   "dependencies": {
-    "abstract-class-error": "^1.0.1",
-    "centroid": "^1.0.0"
+    "abstract-class-error": "^2.0.0",
+    "centroid": "^1.0.2"
   },
   "devDependencies": {
     "eslint": "^7.4.0",
