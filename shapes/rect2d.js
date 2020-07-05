@@ -25,7 +25,7 @@ class Rect2D extends Shape2D {
 
     if (!(center instanceof Vector2D) || !(extents instanceof Vector2D)) {
       if (typeof center !== 'object' || typeof extents !== 'object') {
-        throw new TypeError('Center and extents must be either instances of Vector2D or objects compatible with that constructor.')
+        throw new TypeError('Center and extents must be either instances of Vector2D or objects compatible with Vector2D constructor.')
       }
 
       center = new Vector2D(center)
@@ -57,11 +57,12 @@ class Rect2D extends Shape2D {
       return this.center
     }
 
+    // Find the vertex furthest in the support direction
     let i = 0
     let vertex
+    let distance
     let furthestVertex
     let furthestDistance = 0
-    let distance
 
     do {
       // Pick a corner.

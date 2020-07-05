@@ -30,17 +30,16 @@ class PolygonConvex2D extends Shape2D {
     }
 
     if (!Array.isArray(vertices)) {
-      throw new TypeError('Vertices must be an array')
+      throw new TypeError('Vertices must be an array or instance of Vector2D')
     }
 
     switch (typeof vertices[0]) {
     case 'number': {
-      // if (typeof vertices[0] === 'number') {
       if (vertices.length % 2 !== 0) {
         throw new RangeError('An even number of coordinates required to construct vertices.')
       }
       if (vertices.length < 6) {
-        throw new RangeError(`At least 3 vertices required, ${vertices.length} provided.`)
+        throw new RangeError(`At least 3 vertices required, ${vertices.length / 2} provided.`)
       }
 
       let coordinates = vertices
@@ -54,10 +53,6 @@ class PolygonConvex2D extends Shape2D {
       if (vertices.length < 3) {
         throw new RangeError(`At least 3 vertices required, ${vertices.length} provided.`)
       }
-      // } else if (Array.isArray(vertices[0])) {
-      // vertices = vertices.map((vertex) => new Vector2D(vertex[0], vertex[1]))
-      // } else if ()
-      // case 'object':
       if (vertices[0] instanceof Vector2D) {
         Vector2D.assertVectors(vertices)
         break
@@ -75,8 +70,7 @@ class PolygonConvex2D extends Shape2D {
     }
 
     this.vertices = vertices
-    let preparedVertices = vertices.map(vertex => vertex.toArray())
-    let centroid = findCentroid(preparedVertices)
+    let centroid = findCentroid(vertices.map(vertex => vertex.toArray()))
     this.center = new Vector2D(centroid)
   }
 
@@ -102,13 +96,13 @@ class PolygonConvex2D extends Shape2D {
     let furthestVertex
     let distance
 
-    this.vertices.forEach((vertex) => {
+    for (const vertex of this.vertices) {
       distance = Vector2D.dotProduct(vertex, direction)
       if (distance > furthestDistance) {
         furthestDistance = distance
         furthestVertex = vertex
       }
-    })
+    }
 
     return furthestVertex
   }
@@ -130,25 +124,6 @@ class PolygonConvex2D extends Shape2D {
 
     return this
   }
-
-  // recenter(reorder = false) {
-  //     if (reorder) {
-  //         let vertices = this.vertices
-  //         let min = vertices[0].x + vertices[0].y
-  //         let iLen = vertices
-  //         let vertex
-  //         let sum
-
-  //         for (let i = 1; i < iLen; i++) {
-  //             vertex = vertices[i]
-  //             sum = vertex.x + vertex.y
-  //             if (sum < min) {
-
-  //             }
-  //         }
-  //     }
-
-  // }
 }
 
 module.exports = PolygonConvex2D
