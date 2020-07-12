@@ -262,13 +262,13 @@ const test = (shapeA, shapeB, shapeAVelocity, shapeBVelocity) => {
   }
 
   /*
-    * There is separating distance at t0 and none at t1 therefore we need to find a TOI.
-    * This is done using Brent's Method of Root Solving. Brent's Method requires, at least, a function of x
-    * (in our case SD(t)) and lower and upper bounds within which to search for an x intercept. In our case
-    * the x intecept represents SD(tx) = 0 where tx is some time inbetween t0 and t1.
-    */
+  * There is separating distance at t0 and none at t1 therefore we need to find a TOI.
+  * This is done using Brent's Method of Root Solving. Brent's Method requires, at least, a function of x
+  * (in our case SD(t)) and lower and upper bounds within which to search for an x intercept. In our case
+  * the x intecept represents SD(tx) = 0 where tx is some time inbetween t0 and t1.
+  */
 
-  // We've found a intersect time so return it.
+  // Return any potential intersect time.
   // This can be used as a scalar for the velocities of shapeA and shapeB to provide movement to the exact place that
   // they intercept.
   return brentsMethod({
@@ -282,17 +282,17 @@ const test = (shapeA, shapeB, shapeAVelocity, shapeBVelocity) => {
       // Translate shapeB by vt.
       let shapeBt = shapeB.clone()
       shapeBt.translate(vt)
-      // Get supporting distances for shapeA and shapeBt using direction vectors from inital supporting distances.
+      // Get supporting distances for shapeA and shapeBt using direction vectors from inital separating distances.
       let supportingDistancest = supportingHyperspaceExtrusion(initialSeparatingDirections, shapeA, shapeBt)
 
-      // If the support distance is positive then a simple extrusion test wont be precise enough, we need to run a full
-      // GJK extrusion to get the closest distance.
+      // If greatest support distance is positive then we know that P and Q are disjoint from t0 to now. This means that
+      // a simple extrusion test won't be precise enough, we need to run a full GJK extrusion to get the closest
+      // distance.
       if (supportingDistancest[0].distance > 0) {
         supportingDistancest = gjk(shapeA, shapeBt)
         // Go ahead and use the new supporting directions to calculate future distances.
         // It's good to use the refined directions from this t because we know that P and Q are disjoint from t0 to now.
-        supportingDistancest = supportingDistancest.filter(({ distance }) => distance > 0)
-        initialSeparatingDirections = supportingDistancest
+        initialSeparatingDirections = supportingDistancest.filter(({ distance }) => distance > 0)
       }
 
       // Return maximum distance
