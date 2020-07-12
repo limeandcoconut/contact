@@ -25,22 +25,17 @@ const distanceDescending = (a, b) => {
 
 /**
  * Find a supporting vertex on the Minkowski Difference formed by the two shapes.
- * @function addSupportVertex
+ * @function getSupportVertex
  * @param   {Vector2D}  direction   The vector along which to find supporting vertices.
  * @param   {Shape2D}   shapeA      One of the shapes.
  * @param   {Shape2D}   shapeB      The other shape.
- * @param   {Array}     vertices    The array of Vector2D vertices representing the feature of the Minkowski Difference
- *                                  closeset to the origin. This is here to be mutated.
- * @return  {Vector2D}              The new vertex ont the Minkowski Difference.
+ * @return  {Vector2D}              The new vertex on the Minkowski Difference.
  */
-const addSupportVertex = (direction, shapeA, shapeB, vertices) => {
+const getSupportVertex = (direction, shapeA, shapeB) =>
   // Vq = Sq(-s)
   // Vp = Sp(s)
   // Vz = Vq - Vp
-  let newVertex = Vector2D.subtract(shapeA.support(direction.getInverse()), shapeB.support(direction))
-  vertices.push(newVertex)
-  return newVertex
-}
+  Vector2D.subtract(shapeA.support(direction.getInverse()), shapeB.support(direction))
 
 /**
  * Get the supporting distance between the given shapes along the given vector.
@@ -62,8 +57,8 @@ const supportingDistance = (direction, shapeA, shapeB) => {
 /**
  * Prune vertices to the two closest to the origin. This mutates the passed Array.
  * @function pruneVertices
- * @param   {Array}     vertices                An array of Vector2D vertices on the Minkowski Difference.
- * @return  {Array}                             An array of the two vertices closest to the origin.
+ * @param   {Array} vertices  An array of Vector2D vertices on the Minkowski Difference. Will be mutated.
+ * @return  {Array}           An array of the two vertices closest to the origin.
  */
 const pruneVertices = (vertices) => {
   if (vertices.length < 3) {
@@ -71,8 +66,14 @@ const pruneVertices = (vertices) => {
   }
 
   // Sort ascending
+  // This might look redundant (since the MD should decrease at each iteration) but this line from the reference
+  // material:
+  // "If P and Q are disjoint, convex analysis proves that the Minkowski distance will converge monotonically to the
+  // global closest distance, and the closest features can be interpreted directly from the final sets Vp and Vq."
+  //
+  // implies otherwise. Bears testing to confirm.
   vertices.sort((a, b) => a.magnitude() - b.magnitude())
-  // vertices is reassigned here just in case the user wants to use the mutated version rather than the returned one.
+
   vertices = vertices.slice(0, 2)
   return vertices
 }
@@ -87,12 +88,14 @@ const pruneVertices = (vertices) => {
  */
 const gjk = (shapeA, shapeB) => {
   // Used to check if the Minkowski Distance is still decreasing at each iteration.
-  let lastMD = Number.MAX_SAFE_INTEGER
-  let currentMD = 0
+  let lastMD
+  let currentMD
   // Vertices representing the feature of the Minkowski Difference closeset to the origin (a line or point).
   let vertices = []
+  // The two vertices that potentially make up the closes features
   let v1
   let v2
+  // A vector between them
   let v1v2
 
   let supportingDistances = []
@@ -103,11 +106,13 @@ const gjk = (shapeA, shapeB) => {
     distance: supportingDistance(direction, shapeA, shapeB),
     direction,
   })
-  // The closest feature must initially be the only vertex so far computed on the MD.
-  // The vector to this point is the new direction.
-  direction = addSupportVertex(direction, shapeA, shapeB, vertices)
+  // The closest feature of the MD to the origin must initially be the only vertex so far computed.
+  // The vector to this point is used as the new direction.
+  direction = getSupportVertex(direction, shapeA, shapeB)
+  vertices.push(direction)
   currentMD = direction.magnitude()
 
+  // Proceed in finding the direction between the closest features
   do {
     // Add the new distance.
     supportingDistances.push({
@@ -115,13 +120,13 @@ const gjk = (shapeA, shapeB) => {
       direction,
     })
     // Add the next supporting virtex.
-    addSupportVertex(direction, shapeA, shapeB, vertices)
+    vertices.push(getSupportVertex(direction, shapeA, shapeB))
 
     // If there are more than two vertices return the two closeset to the origin as our closest feature.
     vertices = pruneVertices(vertices)
 
     // Find the distance from the closest feature to the origin. This uses vector projection clamped to a line segment.
-    // See Figure 1 for a diagram of below.
+    // *See Figure 1 for diagrams of below.*
     v1 = vertices[0]
     v2 = vertices[1]
 
@@ -129,12 +134,14 @@ const gjk = (shapeA, shapeB) => {
     if (v1.equals(v2)) {
       break
     }
-    // Line segment from v1 to v2
+
+    // Line segment from v1 to v2. This is an edge of the MD.
     v1v2 = Vector2D.subtract(v2, v1)
 
-    // Project the vector from v1 to the origin along the segment v1v2. Clamp the projection to the line segment so that
-    // if it doesn't fall in the middle either v1 or v2 will be used to calculate the
-    // Minkowski Distance. This is the new direction. Again see Figure 1 for a diagram.
+    // Project the vector *from v1 to the origin* along the segment v1v2. Clamp the projection to the line segment so that
+    // if it doesn't fall in the middle either v1 or v2 will be used to calculate the Minkowski Distance. This is the
+    // new direction.
+    // *Again see Figure 1 for diagrams.*
     direction = Vector2D.projectVector(v1.getInverse(), v1v2, true)
     direction = Vector2D.add(direction, v1)
 
@@ -159,7 +166,7 @@ const gjk = (shapeA, shapeB) => {
  *                                              directions) for this configuration of shapes (for this time t).
  */
 const supportingHyperspaceExtrusion = (supportingDistances, shapeA, shapeB) => {
-  let newSupportingDistances = []
+  const newSupportingDistances = []
 
   let distance
   for (const { direction } of supportingDistances) {
@@ -206,14 +213,14 @@ const test = (shapeA, shapeB, shapeAVelocity, shapeBVelocity) => {
   }
   /*
   * Get supporting directions and distances at t0 to see if there is an initial separating distance (positive supporting
-  * distance).
+  * distance) which would indicate that there is at least one plane separating the shapes at t0.
   * Supporting distances at t0 are sorted descending.
   * These are objects with distance and direction.
   * Distances are signed as they correspond to a direction.
   * Negative distances represent no separation on that plane.
   */
-  let supportingDistancest0 = gjk(shapeA, shapeB)
-  let separatingDistancest0 = []
+  const supportingDistancest0 = gjk(shapeA, shapeB)
+  const separatingDistancest0 = []
 
   // Filter out negative distances and determine if the shapes are in contact initially.
   let separated = false
@@ -221,6 +228,7 @@ const test = (shapeA, shapeB, shapeAVelocity, shapeBVelocity) => {
     // If the supporting distance is positive it separates the shapes.
     if (support.distance > 0) {
       separatingDistancest0.push(support)
+      // There is at east one plane separating the shapes at t0.
       separated = true
     } else {
       // Break at the first negative distance (they are sorted).
@@ -302,20 +310,31 @@ const test = (shapeA, shapeB, shapeAVelocity, shapeBVelocity) => {
  *                           |
  *                           | v1v2
  *           direction       |
- *      o ------------------>|  ^ }  projection of v1o onto v1v2
- *         `---.__          ∟|  | }  (closest point on v1v2
- *                 `---.__   |  | }  to origin)
- *                         `>v1
+ *      o ------------------>|  ^ }  Projection of v1o onto v1v2
+ *        `---.__           ∟|  | }  (closest point on v1v2
+ *                `---.__    |  | }  to origin)
+ *                        `-v1
  *
  * When it does not:
+ *
  *                   v2
  *                  /
  *          dir    /
- *      o ------->v1   }-- when clamped projection will return v1
+ *      o ------->v1   }-- When clamped projection will return v1
  *  +-{   ` .    /         (again, closest point on v1v2)
  *  |-{       `∟'
  *  |
- *  |__ actual projection of v1o onto v1v2
+ *  |__ Actual projection of v1o onto v1v2
+ *
+ *
+ *
+ *             .∟\    } -- Portion of projection of v1o onto v1v2 (clamped away)
+ *         . '    \   } _/
+ *      o'-------->v2         }-- When clamped projection will return v2
+ *       `-._   dir \
+ *            `-._   \
+ *                 `-.v1
+ *
  */
 
 /**
