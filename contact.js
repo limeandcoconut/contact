@@ -244,7 +244,7 @@ const test = (shapeA, shapeB, shapeAVelocity, shapeBVelocity) => {
   // Do an extrusion of the separating space from t0  to t1. This is the separating hyperspace.
 
   // The directions are used to get supporting distances (along the same vectors) from other times tx.
-  let initialSupportingDirections = supportingDistancest0
+  let initialSeparatingDirections = separatingDistancest0
   // Simplify matters by using only one vector to move shapes.
   let relativeVelocity = Vector2D.subtract(shapeBVelocity, shapeAVelocity)
 
@@ -253,7 +253,7 @@ const test = (shapeA, shapeB, shapeAVelocity, shapeBVelocity) => {
   shapeBt1.translate(relativeVelocity)
 
   // Get supporting distances at t1 (again sorted descending).
-  let supportingDistancest1 = supportingHyperspaceExtrusion(initialSupportingDirections, shapeA, shapeBt1)
+  let supportingDistancest1 = supportingHyperspaceExtrusion(initialSeparatingDirections, shapeA, shapeBt1)
 
   // If at least one distance is positive then there is a plane separating P and Q on the interval t0 to t1.
   // Remember this is true because we use the same supporting directions.
@@ -283,7 +283,7 @@ const test = (shapeA, shapeB, shapeAVelocity, shapeBVelocity) => {
       let shapeBt = shapeB.clone()
       shapeBt.translate(vt)
       // Get supporting distances for shapeA and shapeBt using direction vectors from inital supporting distances.
-      let supportingDistancest = supportingHyperspaceExtrusion(initialSupportingDirections, shapeA, shapeBt)
+      let supportingDistancest = supportingHyperspaceExtrusion(initialSeparatingDirections, shapeA, shapeBt)
 
       // If the support distance is positive then a simple extrusion test wont be precise enough, we need to run a full
       // GJK extrusion to get the closest distance.
@@ -292,7 +292,7 @@ const test = (shapeA, shapeB, shapeAVelocity, shapeBVelocity) => {
         // Go ahead and use the new supporting directions to calculate future distances.
         // It's good to use the refined directions from this t because we know that P and Q are disjoint from t0 to now.
         supportingDistancest = supportingDistancest.filter(({ distance }) => distance > 0)
-        initialSupportingDirections = supportingDistancest
+        initialSeparatingDirections = supportingDistancest
       }
 
       // Return maximum distance
