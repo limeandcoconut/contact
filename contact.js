@@ -1,6 +1,7 @@
 const { Vector2D } = require('friendly-vectors')
 const Shape2D = require('./shapes/shape2d')
 const brentsMethod = require('brents-method')
+// TODO: update brents method
 
 /*
  * P   = shapeB
@@ -11,6 +12,7 @@ const brentsMethod = require('brents-method')
  * TOI = Time of intercept
  */
 
+// TODO: I think this is ascending
 /**
   * Sort separating information objects in descending order by distance.
   * @function distanceDescending
@@ -55,25 +57,22 @@ module.exports = {
       throw new TypeError(`Shape B velocity must be an instance of Vector2D. ${shapeBVelocity.constructor.name} provided.`)
     }
     /*
-         * Get supporting directions and distances at t0 to see if there is an initial separating distance
-         * (positive supporting distance).
-         * Supporting distances at t0 are sorted descending.
-         * These are objects with distance and direction.
-         * Distances are signed as they correspond to a direction.
-         * Negative distances represent no separation on that plane.
-         */
+    * Get supporting directions and distances at t0 to see if there is an initial separating distance (positive
+    * supporting distance).
+    * Supporting distances at t0 are sorted descending.
+    * These are objects with distance and direction.
+    * Distances are signed as they correspond to a direction.
+    * Negative distances represent no separation on that plane.
+    */
     let supportingDistancest0 = this.gjk(shapeA, shapeB)
     let separatingDistancest0 = []
 
     // Filter out negative distances and determine if the shapes are in contact initially.
     let separated = false
-    let sd
-    let iLength = supportingDistancest0.length
-    for (let i = 0; i < iLength; i++) {
-      sd = supportingDistancest0[i]
+    for (const support of supportingDistancest0) {
       // If the supporting distance is positive it separates the shapes.
-      if (sd.distance > 0) {
-        separatingDistancest0.push(sd)
+      if (support.distance > 0) {
+        separatingDistancest0.push(support)
         separated = true
       } else {
         // Break at the first negative distance (they are sorted).
@@ -101,72 +100,68 @@ module.exports = {
     let supportingDistancest1 = this.supportingHyperspaceExtrusion(initialSupportingDirections, shapeA, shapeBt1)
 
     // If at least one distance is positive then there is a plane separating P and Q on the interval t0 to t1.
+    // Remember this is true because we use the same supporting directions.
     if (supportingDistancest1[0].distance > 0) {
       return false
     }
 
     /*
-         * There is separating distance at t0 and none at t1 therefore we need to find a TOI.
-         * This is done using Brent's Method of Root Solving. Brent's Method requires, at least, a function of x
-         * (in our case SD(t)) and lower and upper bounds within which to search for an x intercept. In our case
-         * the x intecept represents SD(tx) = 0 where tx is some time inbetween t0 and t1.
-         */
-
-    // Limits of t for the function
-    let lowerLimit = 0
-    let upperLimit = 1
-
-    // This is our function for finding time of intercept.
-    // It takes t and returns the maximum supporting distance at that time based on the supporting directions
-    // that were found earlier.
-    let func = (t) => {
-      // Scale v by t.
-      let vt = new Vector2D(relativeVelocity)
-      vt.scale(t)
-      // Translate shapeB by vt.
-      let shapeBt = shapeB.clone()
-      shapeBt.translate(vt)
-      // Get supporting distances for shapeA and shapeBt using direction vectors from inital supporting distances.
-      let supportingDistancest = this.supportingHyperspaceExtrusion(initialSupportingDirections, shapeA, shapeBt)
-
-      // If the support distance is positive then a simple extrusion test wont be precise enough,
-      // we need to run a full GJK extrusion to get the closest distance.
-      if (supportingDistancest[0].distance > 0) {
-        supportingDistancest = this.gjk(shapeA, shapeBt)
-        // Go ahead and use the new supporting directions to calculate future distances.
-        // It's good to use the refined directions from this t because we know that P and Q are disjoint from
-        // t0 to now.
-        supportingDistancest = supportingDistancest.filter(sd => sd.distance > 0)
-        initialSupportingDirections = supportingDistancest
-      }
-
-      // Return maximum distance
-      return supportingDistancest[0].distance
-    }
+    * There is separating distance at t0 and none at t1 therefore we need to find a TOI.
+    * This is done using Brent's Method of Root Solving. Brent's Method requires, at least, a function of x
+    * (in our case SD(t)) and lower and upper bounds within which to search for an x intercept. In our case
+    * the x intecept represents SD(tx) = 0 where tx is some time inbetween t0 and t1.
+    */
 
     // We've found a intersect time so return it.
     // This can be used as a scalar for the velocities of shapeA and shapeB to provide movement to the exact place
     // that they intercept.
     return brentsMethod({
-      func,
-      lowerLimit,
-      upperLimit,
+      // This is our function for finding time of intercept.
+      // It takes t and returns the maximum supporting distance at that time based on the supporting directions
+      // that were found earlier.
+      func: (t) => {
+        // Scale v by t.
+        let vt = new Vector2D(relativeVelocity)
+        vt.scale(t)
+        // Translate shapeB by vt.
+        let shapeBt = shapeB.clone()
+        shapeBt.translate(vt)
+        // Get supporting distances for shapeA and shapeBt using direction vectors from inital supporting distances.
+        let supportingDistancest = this.supportingHyperspaceExtrusion(initialSupportingDirections, shapeA, shapeBt)
+
+        // If the support distance is positive then a simple extrusion test wont be precise enough,
+        // we need to run a full GJK extrusion to get the closest distance.
+        if (supportingDistancest[0].distance > 0) {
+          supportingDistancest = this.gjk(shapeA, shapeBt)
+          // Go ahead and use the new supporting directions to calculate future distances.
+          // It's good to use the refined directions from this t because we know that P and Q are disjoint from
+          // t0 to now.
+          supportingDistancest = supportingDistancest.filter(({ distance }) => distance > 0)
+          initialSupportingDirections = supportingDistancest
+        }
+
+        // Return maximum distance
+        return supportingDistancest[0].distance
+      },
+      // Limits of t for the function
+      lowerLimit: 0,
+      upperLimit: 1,
     })
   },
 
   /**
-     * Find a supporting vertex on the Minkowski Difference formed by the two shapes.
-     * @function addSupportVertex
-     * @param   {Vector2D}  direction   The vector along which to find supporting vertices.
-     * @param   {Shape2D}   shapeA      One of the shapes.
-     * @param   {Shape2D}   shapeB      The other shape.
-     * @param   {Array}     vertices    The array of Vector2D vertices representing the feature of the Minkowski
-     *                                  Difference closeset to the origin. This is here to be mutated.
-     * @return  {Vector2D}              The new vertex ont the Minkowski Difference.
-     */
+   * Find a supporting vertex on the Minkowski Difference formed by the two shapes.
+   * @function addSupportVertex
+   * @param   {Vector2D}  direction   The vector along which to find supporting vertices.
+   * @param   {Shape2D}   shapeA      One of the shapes.
+   * @param   {Shape2D}   shapeB      The other shape.
+   * @param   {Array}     vertices    The array of Vector2D vertices representing the feature of the Minkowski
+   *                                  Difference closeset to the origin. This is here to be mutated.
+   * @return  {Vector2D}              The new vertex ont the Minkowski Difference.
+   */
   addSupportVertex(direction, shapeA, shapeB, vertices) {
     // Vq = Sq(-s)
-    // Vq = Sp(s)
+    // Vp = Sp(s)
     // Vz = Vq - Vp
     let newVertex = Vector2D.subtract(shapeA.support(direction.getInverse()), shapeB.support(direction))
     vertices.push(newVertex)
@@ -174,13 +169,13 @@ module.exports = {
   },
 
   /**
-     * Get the supporting distance between the given shapes along the given vector.
-     * @function supportingDistance
-     * @param   {Vector2D}  direction   The supporting direction along which to the supporting distance.
-     * @param   {Shape2D}   shapeA      One of the shapes.
-     * @param   {Shape2D}   shapeB      The other.
-     * @return  {Number}                The signed distance between those shapes along the given vector.
-     */
+   * Get the supporting distance between the given shapes along the given vector.
+   * @function supportingDistance
+   * @param   {Vector2D}  direction   The supporting direction along which to the supporting distance.
+   * @param   {Shape2D}   shapeA      One of the shapes.
+   * @param   {Shape2D}   shapeB      The other.
+   * @return  {Number}                The signed distance between those shapes along the given vector.
+   */
   supportingDistance(direction, shapeA, shapeB) {
     // SD(P, Q, s) = s • Sq(-s) - s • Sp(s)
     let a = Vector2D.dotProduct(direction, shapeA.support(direction.getInverse()))
@@ -191,13 +186,13 @@ module.exports = {
   },
 
   /**
-     * Find the closeset feature on the Minkowski Difference of the given shapes to the origin, then return an Array of
-     * supporting directions and distances needed for extrusion testing.
-     * @function gjk
-     * @param   {Shape2D}   shapeA      One of the necessary shapes.
-     * @param   {Shape2D}   shapeB      One of the necessary shapes.
-     * @return  {Array}                 An Array of objects containing supporting directions and distances.
-     */
+   * Find the closeset feature on the Minkowski Difference of the given shapes to the origin, then return an Array of
+   * supporting directions and distances needed for extrusion testing.
+   * @function gjk
+   * @param   {Shape2D}   shapeA      One of the necessary shapes.
+   * @param   {Shape2D}   shapeB      One of the necessary shapes.
+   * @return  {Array}                 An Array of objects containing supporting directions and distances.
+   */
   gjk(shapeA, shapeB) {
     // Used to check if the Minkowski Distance is still decreasing at each iteration.
     let lastMD = Number.MAX_SAFE_INTEGER
@@ -263,23 +258,20 @@ module.exports = {
   },
 
   /**
-     * Get supporting distances for given supporting directions and shapes. This is an extrusion of supporting distances
-     * from a previous time to the current time as represented by the provided shapes.
-     * @function supportingHyperspaceExtrusion
-     * @param   {Array}     supportingDistances     An array of objects with supporting distances and directions.
-     * @param   {Shape2D}   shapeA                  One of the two shapes.
-     * @param   {Shape2D}   shapeB                  One of the two shapes.
-     * @return  {Array}                             An array of obects with supporting distances (and the provided
-     *                                              directions) for this configuration of shapes (for this time t).
-     */
+   * Get supporting distances for given supporting directions and shapes. This is an extrusion of supporting distances
+   * from a previous time to the current time as represented by the provided shapes.
+   * @function supportingHyperspaceExtrusion
+   * @param   {Array}     supportingDistances     An array of objects with supporting distances and directions.
+   * @param   {Shape2D}   shapeA                  One of the two shapes.
+   * @param   {Shape2D}   shapeB                  One of the two shapes.
+   * @return  {Array}                             An array of obects with supporting distances (and the provided
+   *                                              directions) for this configuration of shapes (for this time t).
+   */
   supportingHyperspaceExtrusion(supportingDistances, shapeA, shapeB) {
     let newSupportingDistances = []
 
-    let direction
     let distance
-    let iLength = supportingDistances.length
-    for (let i = 0; i < iLength; i++) {
-      direction = supportingDistances[i].direction
+    for (const { direction } of supportingDistances) {
       // Get the distance for the proveded direction.
       distance = this.supportingDistance(direction, shapeA, shapeB)
 
