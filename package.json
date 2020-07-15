@@ -1,6 +1,6 @@
 {
   "name": "contact",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A package for doing precise collisions and time of intercept computations with 2D shapes.",
   "main": "index.js",
   "author": "Jacob Smith <js@jacobsmith.tech>",
@@ -25,7 +25,9 @@
   "homepage": "https://github.com/limeandcoconut/contact#readme",
   "dependencies": {
     "abstract-class-error": "^2.0.0",
-    "centroid": "^1.0.2"
+    "brents-method": "^1.0.0",
+    "centroid2d": "^2.0.0",
+    "friendly-vectors": "^0.2.0"
   },
   "devDependencies": {
     "eslint": "^7.4.0",

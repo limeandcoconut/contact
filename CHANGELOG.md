@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2020-07-15
+
 ### Added
  
  - This changelog
@@ -14,5 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Changed the [license](./LICENSE.md)
-- Minor cleanup
+- Fixed bug where supporting distances weren't separating
+- Cleaned up files significantly
+- Moved away from vaguely OOP stile in contact.js
 - Upgrade deps
