@@ -1,13 +1,20 @@
 {
   "name": "contact",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A package for doing precise collisions and time of intercept computations with 2D shapes.",
-  "main": "index.js",
+  "main": "dist/index.js",
   "author": "Jacob Smith <js@jacobsmith.tech>",
   "license": "ISC",
   "scripts": {
+    "build": "babel src --out-dir dist --source-maps",
+    "prepublish": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "browserslist": [
+    "last 2 versions",
+    "not IE > 0",
+    "not IE_Mob > 0"
+  ],
   "keywords": [
     "collision",
     "gjk",
@@ -24,6 +31,10 @@
   },
   "homepage": "https://github.com/limeandcoconut/contact#readme",
   "dependencies": {
+    "@babel/cli": "^7.10.5",
+    "@babel/core": "^7.10.5",
+    "@babel/plugin-transform-runtime": "^7.10.5",
+    "@babel/preset-env": "^7.10.4",
     "abstract-class-error": "^2.0.0",
     "brents-method": "^1.0.0",
     "centroid2d": "^2.0.0",
