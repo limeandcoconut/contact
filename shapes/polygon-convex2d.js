@@ -124,6 +124,19 @@ class PolygonConvex2D extends Shape2D {
 
     return this
   }
+
+  /**
+   * @function toArray
+   * @return {Array} An array of numbers prepresenting vertex coordinates.
+   */
+  toArray() {
+    const array = []
+    for (const vertex of this.vertices) {
+      array.push(vertex.x)
+      array.push(vertex.y)
+    }
+    return array
+  }
 }
 
 module.exports = PolygonConvex2D
