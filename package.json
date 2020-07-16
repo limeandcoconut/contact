@@ -35,9 +35,10 @@
     "@babel/core": "^7.10.5",
     "@babel/plugin-transform-runtime": "^7.10.5",
     "@babel/preset-env": "^7.10.4",
-    "abstract-class-error": "^2.0.0",
+    "abstract-class-error": "^3.0.0",
     "brents-method": "^1.0.0",
     "centroid2d": "^2.0.0",
+    "core-js": "^3.6.5",
     "friendly-vectors": "^0.2.0"
   },
   "devDependencies": {
