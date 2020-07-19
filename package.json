@@ -38,8 +38,7 @@
     "abstract-class-error": "^3.0.0",
     "brents-method": "^1.0.0",
     "centroid2d": "^2.0.0",
-    "core-js": "^3.6.5",
-    "friendly-vectors": "^0.2.0"
+    "core-js": "^3.6.5"
   },
   "devDependencies": {
     "eslint": "^7.4.0",
@@ -47,5 +46,8 @@
     "eslint-plugin-html": "^6.0.2",
     "eslint-plugin-unicorn": "^20.1.0",
     "eslint-plugin-vue": "^6.2.2"
+  },
+  "peerDependencies": {
+    "friendly-vectors": "^0.3.1"
   }
 }
