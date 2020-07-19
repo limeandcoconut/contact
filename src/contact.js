@@ -271,11 +271,11 @@ const test = (shapeA, shapeB, shapeAVelocity, shapeBVelocity) => {
   // Return any potential intersect time.
   // This can be used as a scalar for the velocities of shapeA and shapeB to provide movement to the exact place that
   // they intercept.
-  return brentsMethod({
+  return brentsMethod(
     // This is our function for finding time of intercept.
     // It takes t and returns the maximum supporting distance at that time based on the supporting directions that were
     // found earlier.
-    func: (t) => {
+    (t) => {
       // Scale v by t.
       let vt = new Vector2D(relativeVelocity)
       vt.scale(t)
@@ -299,9 +299,13 @@ const test = (shapeA, shapeB, shapeAVelocity, shapeBVelocity) => {
       return supportingDistancest[0].distance
     },
     // Limits of t for the function
-    lowerLimit: 0,
-    upperLimit: 1,
-  })
+    0,
+    1,
+    {
+      // The default 1e-7 is too great and will give false positives in some
+      errorTolerance: 1e-15,
+    },
+  )
 }
 
 /* Figure 1:
