@@ -303,7 +303,8 @@ const test = (shapeA, shapeB, shapeAVelocity, shapeBVelocity) => {
     1,
     {
       // The default 1e-7 is too great and will give false positives in some
-      errorTolerance: 1e-15,
+      errorTolerance: 1e-12,
+      maxIterations: 100,
     },
   )
 }
